@@ -1272,281 +1272,288 @@ window.DEMO_CELLS = {
 <!-- INLINE FALLBACK APP LOGIC
      (Remove this block when app.js is present — this is so the demo
       works standalone without a separate file) -->
-<script>
-(function () {
-  /* ── helpers ─────────────────────────────── */
-  const $  = id => document.getElementById(id);
-  const toInitials = name => name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-  const COLORS = ['#5C1A2E','#1A6B45','#1A3A5C','#7A4A00','#4A1A5C','#005C4A','#5C3A00','#00365C'];
-  const colorFor = id => COLORS[parseInt(id.replace(/\D/g,''), 10) % COLORS.length];
-  let toastTimer;
-
-  window.showToast = function(msg) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-  };
-
-  /* ── state ───────────────────────────────── */
-  let state = { cellKey: null, attendance: {}, members: [] };
-
-  /* ── screen switcher ─────────────────────── */
-  function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    $(id).classList.add('active');
-    window.scrollTo(0,0);
-  }
-
-  /* ── date label ──────────────────────────── */
-  function todayLabel() {
-    return new Date().toLocaleDateString('en-NG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-  }
-
-  /* ── render member list ──────────────────── */
-  function renderList(query) {
-    const list = $('list-root');
-    const empty = $('empty-state');
-    const q = (query || '').toLowerCase().trim();
-    let visible = 0;
-
-    list.innerHTML = '';
-    state.members.forEach((m, i) => {
-      if (q && !m.name.toLowerCase().includes(q)) return;
-      visible++;
-      const att = state.attendance[m.id] || 'pending';
-      const li = document.createElement('li');
-      li.className = 'member-card anim-fade-up' + (att === 'present' ? ' present' : att === 'absent' ? ' absent' : '');
-      li.style.animationDelay = (i * 0.035) + 's';
-      li.setAttribute('role', 'button');
-      li.setAttribute('tabindex', '0');
-      li.setAttribute('aria-label', `${m.name} — ${att}. Tap to toggle`);
-      li.dataset.id = m.id;
-
-      const icon = att === 'present' ? '✓' : att === 'absent' ? '✗' : '○';
-      const chip = att === 'present'
-        ? '<span class="status-chip chip-present">Present</span>'
-        : att === 'absent'
-        ? '<span class="status-chip chip-absent">Absent</span>'
-        : '<span class="status-chip chip-pending">Pending</span>';
-
-      li.innerHTML = `
-        <div class="member-avatar" style="background:${colorFor(m.id)}" aria-hidden="true">${toInitials(m.name)}</div>
-        <div class="member-info">
-          <div class="member-name">${m.name}</div>
-          <div class="member-meta">${m.role} · ${m.phone}</div>
-          <div class="member-status">${chip}</div>
-        </div>
-        <button class="member-toggle" aria-label="Toggle attendance for ${m.name}">${icon}</button>`;
-
-      li.addEventListener('click', () => toggleMember(m.id));
-      li.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleMember(m.id); }});
-      list.appendChild(li);
-    });
-
-    empty.classList.toggle('show', visible === 0);
-    $('list-count-label').textContent = q ? `${visible} result${visible !== 1 ? 's' : ''}` : `All members (${state.members.length})`;
-  }
-
-  function toggleMember(id) {
-    const cur = state.attendance[id] || 'pending';
-    state.attendance[id] = cur === 'pending' ? 'present' : cur === 'present' ? 'absent' : 'present';
-    updateInsights();
-    renderList($('input-search').value);
-  }
-
-  /* ── insights + progress ─────────────────── */
-  function updateInsights() {
-    const total   = state.members.length;
-    const present = Object.values(state.attendance).filter(v => v === 'present').length;
-    const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
-    const marked  = present + absent;
-    const pct     = total ? Math.round((marked / total) * 100) : 0;
-
-    $('count-total').textContent   = total;
-    $('count-present').textContent = present;
-    $('count-absent').textContent  = absent;
-    $('progress-label').textContent = `${marked} of ${total} marked`;
-    $('progress-bar').style.width  = pct + '%';
-    $('progress-bar-aria').setAttribute('aria-valuenow', pct);
-    $('btn-submit').disabled = marked < total;
-  }
-
-  /* ── login ───────────────────────────────── */
-  $('login-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    let ok = true;
-
-    const cellKey  = $('input-cell').value;
-    const username = $('input-username').value.trim();
-    const password = $('input-password').value;
-
-    const setErr = (fid, show) => {
-      const f = $(fid);
-      if (f) f.classList.toggle('has-error', show);
-      if (show) ok = false;
-    };
-    setErr('field-cell',     !cellKey);
-    setErr('field-username', !username);
-    setErr('field-password', !password);
-    if (!ok) return;
-
-    const btn = $('btn-primary');
-    btn.disabled = true;
-    btn.classList.add('loading');
-    btn.textContent = ' Signing in…';
-
-    try {
-      const response = await fetch('https://tch-cell-leaders-portal.onrender.com/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellKey, username, password })
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        showToast(data.message || 'Login failed. Please check your details.');
-        return;
-      }
-
-      // Save token for future requests
-      localStorage.setItem('authToken', data.token);
-
-      // Initialize state
-      state.cellKey    = cellKey;
-      state.cellName   = data.cell.cellName;
-      state.leader     = data.cell.leader;
-      state.members    = data.cell.members;
-      state.attendance = {};
-
-      // Update UI
-      $('topbar-leader-name').textContent = data.cell.leader;
-      $('topbar-cell-name').textContent   = data.cell.cellName + ' Cell';
-      $('service-date').textContent       = todayLabel();
-
-      updateInsights();
-      renderList();
-      showScreen('screen-attendance');
-
-      const firstName = data.cell.leader.split(' ')[1] || data.cell.leader;
-      showToast(`Welcome, ${firstName}! 🙏`);
-
-    } catch (err) {
-      console.error(err);
-      showToast('Network error. Please check your connection and try again.');
-    } finally {
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.textContent = 'Sign In';
-    }
-  });
-  /* ── password toggle ─────────────────────── */
-  $('btn-pwd-toggle').addEventListener('click', function() {
-    const inp = $('input-password');
-    const show = inp.type === 'password';
-    inp.type = show ? 'text' : 'password';
-    this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-    this.textContent = show ? '🙈' : '👁';
-  });
-
-  /* ── search ──────────────────────────────── */
-  $('input-search').addEventListener('input', function() {
-    $('btn-search-clear').style.display = this.value ? 'block' : 'none';
-    renderList(this.value);
-  });
-  $('btn-search-clear').addEventListener('click', function() {
-    $('input-search').value = '';
-    this.style.display = 'none';
-    renderList();
-  });
-
-  /* ── mark all ────────────────────────────── */
-  $('btn-mark-all').addEventListener('click', function() {
-    const allPresent = state.members.every(m => state.attendance[m.id] === 'present');
-    state.members.forEach(m => {
-      state.attendance[m.id] = allPresent ? 'pending' : 'present';
-    });
-    updateInsights();
-    renderList($('input-search').value);
-    showToast(allPresent ? 'All cleared' : 'All marked present');
-  });
-
-  /* ── submit ──────────────────────────────── */
-  $('btn-submit').addEventListener('click', async function() {
-    this.disabled = true;
-    this.textContent = 'Saving…';
-
-    const present = Object.values(state.attendance).filter(v => v === 'present').length;
-    const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
-
-    const record = {
-      cellKey     : state.cellKey,
-      cellName    : state.cellName,
-      leader      : state.leader,
-      serviceDate : new Date().toISOString().slice(0, 10),
-      members     : state.members.map(m => ({
-        ...m,
-        status: state.attendance[m.id] || 'absent'
-      })),
-    };
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('https://tch-cell-leaders-portal.onrender.com/api/attendance/submit', {
-        method : 'POST',
-        headers: {
-          'Content-Type' : 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(record),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        showToast(data.message || 'Submission failed. Please try again.');
-        this.disabled = false;
-        this.textContent = 'Submit →';
-        return;
-      }
-
-      $('sum-present').textContent = present;
-      $('sum-absent').textContent  = absent;
-      showScreen('screen-success');
-
-    } catch (err) {
-      console.error(err);
-      showToast('Network error. Could not submit attendance.');
-      this.disabled = false;
-      this.textContent = 'Submit →';
-    }
-  });
-
-  /* ── logout ──────────────────────────────── */
-  $('btn-logout').addEventListener('click', function() {
-    if (!confirm('Log out and return to sign-in?')) return;
-    state = { cellKey: null, attendance: {}, members: [] };
-    $('login-form').reset();
-    $('btn-submit').disabled = false;
-    $('btn-submit').textContent = 'Submit →';
-    $('input-search').value = '';
-    showScreen('screen-login');
-  });
-
-  /* ── new session ─────────────────────────── */
-  $('btn-new-session').addEventListener('click', function() {
-    state.attendance = {};
-    updateInsights();
-    renderList();
-    $('btn-submit').disabled = true;
-    $('btn-submit').textContent = 'Submit →';
-    showScreen('screen-attendance');
-  });
-
-})();
-</script>
+      <script>
+        (function () {
+          /* ── helpers ─────────────────────────────── */
+          const $  = id => document.getElementById(id);
+          const toInitials = name => name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+          const COLORS = ['#5C1A2E','#1A6B45','#1A3A5C','#7A4A00','#4A1A5C','#005C4A','#5C3A00','#00365C'];
+          const colorFor = id => COLORS[parseInt(id.replace(/\D/g,''), 10) % COLORS.length];
+          let toastTimer;
+        
+          window.showToast = function(msg) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+          };
+        
+          /* ── state ───────────────────────────────── */
+          let state = { cellKey: null, cellName: null, leader: null, attendance: {}, members: [] };
+        
+          /* ── screen switcher ─────────────────────── */
+          function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            $(id).classList.add('active');
+            window.scrollTo(0, 0);
+          }
+        
+          /* ── date label ──────────────────────────── */
+          function todayLabel() {
+            return new Date().toLocaleDateString('en-NG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+          }
+        
+          /* ── render member list ──────────────────── */
+          function renderList(query) {
+            const list  = $('list-root');
+            const empty = $('empty-state');
+            const q     = (query || '').toLowerCase().trim();
+            let visible = 0;
+        
+            list.innerHTML = '';
+            state.members.forEach((m, i) => {
+              if (q && !m.name.toLowerCase().includes(q)) return;
+              visible++;
+              const att = state.attendance[m.id] || 'pending';
+              const li  = document.createElement('li');
+              li.className = 'member-card anim-fade-up' +
+                (att === 'present' ? ' present' : att === 'absent' ? ' absent' : '');
+              li.style.animationDelay = (i * 0.035) + 's';
+              li.setAttribute('role', 'button');
+              li.setAttribute('tabindex', '0');
+              li.setAttribute('aria-label', `${m.name} — ${att}. Tap to toggle`);
+              li.dataset.id = m.id;
+        
+              const icon = att === 'present' ? '✓' : att === 'absent' ? '✗' : '○';
+              const chip = att === 'present'
+                ? '<span class="status-chip chip-present">Present</span>'
+                : att === 'absent'
+                ? '<span class="status-chip chip-absent">Absent</span>'
+                : '<span class="status-chip chip-pending">Pending</span>';
+        
+              li.innerHTML = `
+                <div class="member-avatar" style="background:${colorFor(m.id)}" aria-hidden="true">${toInitials(m.name)}</div>
+                <div class="member-info">
+                  <div class="member-name">${m.name}</div>
+                  <div class="member-meta">${m.role} · ${m.phone}</div>
+                  <div class="member-status">${chip}</div>
+                </div>
+                <button class="member-toggle" aria-label="Toggle attendance for ${m.name}">${icon}</button>`;
+        
+              li.addEventListener('click', () => toggleMember(m.id));
+              li.addEventListener('keydown', e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleMember(m.id); }
+              });
+              list.appendChild(li);
+            });
+        
+            empty.classList.toggle('show', visible === 0);
+            $('list-count-label').textContent = q
+              ? `${visible} result${visible !== 1 ? 's' : ''}`
+              : `All members (${state.members.length})`;
+          }
+        
+          function toggleMember(id) {
+            const cur = state.attendance[id] || 'pending';
+            state.attendance[id] = cur === 'pending' ? 'present' : cur === 'present' ? 'absent' : 'present';
+            updateInsights();
+            renderList($('input-search').value);
+          }
+        
+          /* ── insights + progress ─────────────────── */
+          function updateInsights() {
+            const total   = state.members.length;
+            const present = Object.values(state.attendance).filter(v => v === 'present').length;
+            const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
+            const marked  = present + absent;
+            const pct     = total ? Math.round((marked / total) * 100) : 0;
+        
+            $('count-total').textContent    = total;
+            $('count-present').textContent  = present;
+            $('count-absent').textContent   = absent;
+            $('progress-label').textContent = `${marked} of ${total} marked`;
+            $('progress-bar').style.width   = pct + '%';
+            $('progress-bar-aria').setAttribute('aria-valuenow', pct);
+            $('btn-submit').disabled = marked < total;
+          }
+        
+          /* ── LOGIN ───────────────────────────────── */
+          $('login-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            let ok = true;
+        
+            const cellKey  = $('input-cell').value;
+            const username = $('input-username').value.trim();
+            const password = $('input-password').value;
+        
+            const setErr = (fid, show) => {
+              const f = $(fid);
+              if (f) f.classList.toggle('has-error', show);
+              if (show) ok = false;
+            };
+            setErr('field-cell',     !cellKey);
+            setErr('field-username', !username);
+            setErr('field-password', !password);
+            if (!ok) return;
+        
+            const btn = $('btn-primary');
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.textContent = ' Signing in…';
+        
+            try {
+              const response = await fetch('https://tch-cell-leaders-portal.onrender.com/api/auth/login', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ cellKey, username, password }),
+              });
+        
+              const data = await response.json();
+        
+              if (!data.success) {
+                showToast(data.message || 'Login failed. Please check your details.');
+                return;
+              }
+        
+              // Save token for future requests
+              localStorage.setItem('authToken', data.token);
+        
+              // Populate state
+              state.cellKey    = cellKey;
+              state.cellName   = data.cell.cellName;
+              state.leader     = data.cell.leader;
+              state.members    = data.cell.members;
+              state.attendance = {};
+        
+              // Update UI
+              $('topbar-leader-name').textContent = data.cell.leader;
+              $('topbar-cell-name').textContent   = data.cell.cellName + ' Cell';
+              $('service-date').textContent       = todayLabel();
+        
+              updateInsights();
+              renderList();
+              showScreen('screen-attendance');
+        
+              const firstName = data.cell.leader.split(' ')[1] || data.cell.leader;
+              showToast(`Welcome, ${firstName}! 🙏`);
+        
+            } catch (err) {
+              console.error(err);
+              showToast('Network error. Please check your connection and try again.');
+            } finally {
+              btn.disabled = false;
+              btn.classList.remove('loading');
+              btn.textContent = 'Sign In';
+            }
+          });
+        
+          /* ── PASSWORD TOGGLE ─────────────────────── */
+          $('btn-pwd-toggle').addEventListener('click', function () {
+            const inp  = $('input-password');
+            const show = inp.type === 'password';
+            inp.type   = show ? 'text' : 'password';
+            this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            this.textContent = show ? '🙈' : '👁';
+          });
+        
+          /* ── SEARCH ──────────────────────────────── */
+          $('input-search').addEventListener('input', function () {
+            $('btn-search-clear').style.display = this.value ? 'block' : 'none';
+            renderList(this.value);
+          });
+          $('btn-search-clear').addEventListener('click', function () {
+            $('input-search').value = '';
+            this.style.display = 'none';
+            renderList();
+          });
+        
+          /* ── MARK ALL ────────────────────────────── */
+          $('btn-mark-all').addEventListener('click', function () {
+            const allPresent = state.members.every(m => state.attendance[m.id] === 'present');
+            state.members.forEach(m => {
+              state.attendance[m.id] = allPresent ? 'pending' : 'present';
+            });
+            updateInsights();
+            renderList($('input-search').value);
+            showToast(allPresent ? 'All cleared' : 'All marked present ✓');
+          });
+        
+          /* ── SUBMIT ──────────────────────────────── */
+          $('btn-submit').addEventListener('click', async function () {
+            this.disabled    = true;
+            this.textContent = 'Saving…';
+        
+            const present = Object.values(state.attendance).filter(v => v === 'present').length;
+            const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
+        
+            const record = {
+              cellKey     : state.cellKey,
+              cellName    : state.cellName,
+              leader      : state.leader,
+              serviceDate : new Date().toISOString().slice(0, 10),
+              members     : state.members.map(m => ({
+                ...m,
+                status: state.attendance[m.id] || 'absent',
+              })),
+            };
+        
+            try {
+              const token    = localStorage.getItem('authToken');
+              const response = await fetch('https://tch-cell-leaders-portal.onrender.com/api/attendance/submit', {
+                method:  'POST',
+                headers: {
+                  'Content-Type':  'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(record),
+              });
+        
+              const data = await response.json();
+        
+              if (!data.success) {
+                showToast(data.message || 'Submission failed. Please try again.');
+                this.disabled    = false;
+                this.textContent = 'Submit →';
+                return;
+              }
+        
+              $('sum-present').textContent = present;
+              $('sum-absent').textContent  = absent;
+              showScreen('screen-success');
+        
+            } catch (err) {
+              console.error(err);
+              showToast('Network error. Could not submit attendance.');
+              this.disabled    = false;
+              this.textContent = 'Submit →';
+            }
+          });
+        
+          /* ── LOGOUT ──────────────────────────────── */
+          $('btn-logout').addEventListener('click', function () {
+            if (!confirm('Log out and return to sign-in?')) return;
+            localStorage.removeItem('authToken');
+            state = { cellKey: null, cellName: null, leader: null, attendance: {}, members: [] };
+            $('login-form').reset();
+            $('btn-submit').disabled    = false;
+            $('btn-submit').textContent = 'Submit →';
+            $('input-search').value     = '';
+            showScreen('screen-login');
+          });
+        
+          /* ── NEW SESSION ─────────────────────────── */
+          $('btn-new-session').addEventListener('click', function () {
+            state.attendance = {};
+            updateInsights();
+            renderList();
+            $('btn-submit').disabled    = true;
+            $('btn-submit').textContent = 'Submit →';
+            showScreen('screen-attendance');
+          });
+        
+        })();
+        </script>
 
 </body>
 </html>
