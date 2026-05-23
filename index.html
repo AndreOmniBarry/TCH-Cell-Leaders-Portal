@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="The Comforters House Global — Cell Attendance Portal for cell leaders to log member attendance." />
+  <title>TCH Global · Cell Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ─────────────────────────────────── */
+    :root {
+      --ink:        #0E1117;
+      --ink-mid:    #2B303B;
+      --ink-soft:   #4A5165;
+      --muted:      #7A8099;
+      --border:     #DDE0EA;
+      --surface:    #FFFFFF;
+      --surface-2:  #F5F6FA;
+      --surface-3:  #ECEEF5;
+      --gold:       #C49A28;
+      --gold-light: #FBF4DC;
+      --gold-dark:  #9A7519;
+      --wine:       #5C1A2E;
+      --wine-light: #F5EBF0;
+      --wine-mid:   #7D2740;
+      --green:      #1A6B45;
+      --green-light:#E6F5EE;
+      --red:        #B91C1C;
+      --red-light:  #FEE2E2;
+      --r:          10px;
+      --r-lg:       16px;
+      --r-xl:       22px;
+      --shadow-sm:  0 1px 4px rgba(14,17,23,.07);
+      --shadow:     0 4px 20px rgba(14,17,23,.1);
+      --shadow-lg:  0 12px 40px rgba(14,17,23,.14);
+      --font-display: 'Playfair Display', serif;
+      --font-body:    'Plus Jakarta Sans', sans-serif;
+      --transition:   0.18s ease;
+    }
+
+    /* ── RESET ──────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--surface-2);
+      color: var(--ink);
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    img { display: block; max-width: 100%; }
+    button { font-family: var(--font-body); cursor: pointer; }
+    input, select { font-family: var(--font-body); }
+    ul { list-style: none; }
+
+    /* ── SCREEN MANAGER ─────────────────────────── */
+    .screen { display: none; min-height: 100dvh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── ANIMATIONS ─────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(18px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(196,154,40,.35); }
+      70%  { box-shadow: 0 0 0 10px rgba(196,154,40,0); }
+      100% { box-shadow: 0 0 0 0 rgba(196,154,40,0); }
+    }
+    .anim-fade-up { animation: fadeUp .45s ease both; }
+    .anim-delay-1 { animation-delay: .08s; }
+    .anim-delay-2 { animation-delay: .16s; }
+    .anim-delay-3 { animation-delay: .24s; }
+    .anim-delay-4 { animation-delay: .32s; }
+
+    /* ══════════════════════════════════════════════
+       SECTION 1 — HERO / LOGIN SCREEN
+    ══════════════════════════════════════════════ */
+    #screen-login {
+      background: var(--wine);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* decorative orbs */
+    #screen-login::before,
+    #screen-login::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    #screen-login::before {
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(196,154,40,.22) 0%, transparent 70%);
+      top: -80px; right: -80px;
+    }
+    #screen-login::after {
+      width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(255,255,255,.05) 0%, transparent 70%);
+      bottom: 60px; left: -60px;
+    }
+
+    /* HERO */
+    header#hero {
+      padding: 56px 24px 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .brand-emblem {
+      width: 68px; height: 68px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.1);
+      border: 1.5px solid rgba(196,154,40,.5);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+    .brand-emblem svg { width: 36px; height: 36px; }
+    .hero-eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 6vw, 32px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .hero-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,.6);
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* MAIN LOGIN CARD */
+    main#login-main {
+      flex: 1;
+      padding: 0 16px 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .login-card {
+      background: var(--surface);
+      border-radius: var(--r-xl);
+      padding: 28px 20px;
+      box-shadow: var(--shadow-lg);
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .login-card h2 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .login-card p {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* FORM ELEMENTS */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+      letter-spacing: .02em;
+    }
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      font-size: 14px;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(196,154,40,.15);
+    }
+    .field input::placeholder { color: var(--muted); }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .field-row { display: flex; gap: 10px; }
+    .field-row .field { flex: 1; }
+
+    /* PASSWORD TOGGLE */
+    .pwd-wrap { position: relative; }
+    .pwd-wrap input { padding-right: 44px; }
+    .pwd-toggle {
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1;
+    }
+    .pwd-toggle:focus-visible { outline: 2px solid var(--gold); border-radius: 4px; }
+
+    /* ERROR */
+    .field-error {
+      font-size: 11px;
+      color: var(--red);
+      margin-top: 5px;
+      display: none;
+    }
+    .field.has-error input,
+    .field.has-error select { border-color: var(--red); }
+    .field.has-error .field-error { display: block; }
+
+    /* BTN PRIMARY */
+    #btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--wine);
+      color: #fff;
+      border: none;
+      border-radius: var(--r);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .01em;
+      margin-top: 6px;
+      transition: background var(--transition), transform .1s, box-shadow var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    #btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background .2s;
+    }
+    #btn-primary:hover { background: var(--wine-mid); box-shadow: 0 6px 20px rgba(92,26,46,.35); }
+    #btn-primary:active { transform: scale(.98); }
+    #btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+    #btn-primary.loading::before {
+      content: '';
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin .7s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .login-hint {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+    .login-hint a { color: var(--wine); font-weight: 600; text-decoration: none; }
+
+    /* LOGIN FOOTER */
+    footer#login-footer {
+      padding: 16px 24px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    footer#login-footer p {
+      font-size: 11px;
+      color: rgba(255,255,255,.35);
+      line-height: 1.7;
+    }
+    footer#login-footer a { color: rgba(255,255,255,.55); }
+
+    /* ══════════════════════════════════════════════
+       SECTION 2 — MAIN / ATTENDANCE SCREEN
+    ══════════════════════════════════════════════ */
+    #screen-attendance { background: var(--surface-2); }
+
+    /* TOP BAR */
+    .topbar {
+      background: var(--wine);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 12px rgba(92,26,46,.25);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .topbar-logo {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(196,154,40,.4);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-logo svg { width: 18px; height: 18px; }
+    .topbar-text { line-height: 1.2; }
+    .topbar-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .topbar-cell { font-size: 11px; color: rgba(255,255,255,.6); }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .btn-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.1);
+      border: none;
+      color: rgba(255,255,255,.8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: background var(--transition);
+    }
+    .btn-icon:hover { background: rgba(255,255,255,.2); }
+    .btn-logout {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,.7);
+      background: none;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 20px;
+      padding: 5px 12px;
+      transition: all var(--transition);
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    /* MAIN ATTENDANCE CONTENT */
+    main#attendance-main {
+      flex: 1;
+      padding: 16px 16px 100px;
+      max-width: 520px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* SERVICE CONTEXT BAR */
+    .service-bar {
+      background: var(--gold-light);
+      border: 1px solid rgba(196,154,40,.3);
+      border-radius: var(--r);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .service-info { line-height: 1.35; }
+    .service-type {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold-dark);
+    }
+    .service-date { font-size: 11.5px; color: var(--muted); }
+    .service-badge {
+      font-size: 10.5px;
+      font-weight: 600;
+      background: var(--gold);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* INSIGHTS PANEL */
+    #insights-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .insight-card {
+      background: var(--surface);
+      border-radius: var(--r);
+      padding: 12px 10px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      transition: transform var(--transition);
+    }
+    .insight-card:active { transform: scale(.97); }
+    .insight-val {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .insight-val.green { color: var(--green); }
+    .insight-val.wine  { color: var(--wine); }
+    .insight-val.gold  { color: var(--gold-dark); }
+    .insight-lbl { font-size: 10px; color: var(--muted); font-weight: 500; letter-spacing: .03em; text-transform: uppercase; }
+
+    /* SEARCH BAR */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+    #input-search {
+      width: 100%;
+      padding: 11px 40px 11px 38px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--ink);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    #input-search:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(196,154,40,.12);
+    }
+    #input-search::placeholder { color: var(--muted); }
+    .search-clear {
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      display: none;
+      padding: 4px;
+    }
+
+    /* LIST HEADER */
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .list-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-soft);
+    }
+    .mark-all-btn {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--wine);
+      background: var(--wine-light);
+      border: none;
+      border-radius: 20px;
+      padding: 5px 12px;
+      transition: all var(--transition);
+    }
+    .mark-all-btn:hover { background: var(--wine); color: #fff; }
+
+    /* MEMBER LIST */
+    #list-root {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .member-card {
+      background: var(--surface);
+      border-radius: var(--r-lg);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--border);
+      transition: border-color var(--transition), box-shadow var(--transition), transform .15s;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .member-card:active { transform: scale(.98); }
+    .member-card.present {
+      border-color: var(--green);
+      background: var(--green-light);
+      box-shadow: 0 2px 12px rgba(26,107,69,.12);
+    }
+    .member-card.absent {
+      border-color: var(--red);
+      background: var(--red-light);
+      opacity: .85;
+    }
+    .member-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: var(--font-display);
+      color: #fff;
+      letter-spacing: .01em;
+    }
+    .member-info { flex: 1; min-width: 0; }
+    .member-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .member-meta {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .member-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .status-chip {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: .03em;
+    }
+    .chip-present { background: rgba(26,107,69,.15); color: var(--green); }
+    .chip-absent  { background: rgba(185,28,28,.12); color: var(--red); }
+    .chip-pending { background: var(--surface-3); color: var(--muted); }
+    .member-toggle {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: none;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: all var(--transition);
+    }
+    .member-card.present .member-toggle { background: var(--green); color: #fff; animation: pop .25s ease; }
+    .member-card.absent  .member-toggle { background: var(--red);   color: #fff; }
+    .member-card:not(.present):not(.absent) .member-toggle { background: var(--surface-3); color: var(--muted); }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      display: none;
+    }
+    .empty-state.show { display: block; }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+    .empty-text  { font-size: 13px; color: var(--muted); }
+
+    /* BOTTOM SUBMIT BAR */
+    .submit-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 -4px 20px rgba(14,17,23,.08);
+      z-index: 40;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    /* fix fixed bar centering on desktop */
+    @media (min-width: 520px) {
+      .submit-bar {
+        left: 50%; transform: translateX(-50%);
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        border-radius: var(--r-xl) var(--r-xl) 0 0;
+      }
+    }
+    .submit-progress {
+      flex: 1;
+      line-height: 1.3;
+    }
+    .progress-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .progress-bar-bg {
+      height: 5px;
+      background: var(--surface-3);
+      border-radius: 4px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--wine), var(--gold));
+      border-radius: 4px;
+      transition: width .4s ease;
+    }
+    #btn-submit {
+      flex-shrink: 0;
+      padding: 11px 22px;
+      background: var(--wine);
+      color: #fff;
+      border: none;
+      border-radius: var(--r);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      transition: background var(--transition), transform .1s, box-shadow var(--transition);
+      animation: pulse-ring 2.5s infinite;
+    }
+    #btn-submit:hover { background: var(--wine-mid); box-shadow: 0 6px 20px rgba(92,26,46,.35); }
+    #btn-submit:active { transform: scale(.97); }
+    #btn-submit:disabled { opacity: .5; cursor: not-allowed; animation: none; }
+
+    /* SUCCESS OVERLAY */
+    #screen-success {
+      background: var(--surface);
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+    }
+    .success-icon-wrap {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      background: var(--green-light);
+      border: 3px solid var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+      margin: 0 auto 24px;
+      animation: pop .4s ease;
+    }
+    .success-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+    .success-text {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 300px;
+      margin: 0 auto 28px;
+    }
+    .success-summary {
+      background: var(--surface-2);
+      border-radius: var(--r-lg);
+      padding: 18px;
+      margin: 0 auto 28px;
+      max-width: 320px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .sum-item { text-align: center; }
+    .sum-val { font-family: var(--font-display); font-size: 28px; font-weight: 700; }
+    .sum-val.g { color: var(--green); }
+    .sum-val.r { color: var(--red); }
+    .sum-lbl { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+    .btn-new-session {
+      padding: 13px 32px;
+      background: var(--wine);
+      color: #fff;
+      border: none;
+      border-radius: var(--r);
+      font-size: 15px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      transition: background var(--transition);
+    }
+    .btn-new-session:hover { background: var(--wine-mid); }
+
+    /* ATTENDANCE FOOTER */
+    footer#att-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+      text-align: center;
+    }
+    footer#att-footer p {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    footer#att-footer a { color: var(--wine); text-decoration: none; font-weight: 600; }
+
+    /* ── UTILS ───────────────────────────────────── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+    .toast {
+      position: fixed;
+      bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all .3s;
+      white-space: nowrap;
+      z-index: 200;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SCREEN A — LOGIN
+══════════════════════════════════════════ -->
+<section id="screen-login" class="screen active" role="main" aria-label="Login">
+
+  <!-- § HERO -->
+  <header id="hero" aria-label="Brand header">
+    <div class="brand-emblem anim-fade-up" aria-hidden="true">
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="15" y="2" width="6" height="32" rx="3" fill="#C49A28"/>
+        <rect x="2" y="13" width="32" height="6" rx="3" fill="#C49A28"/>
+      </svg>
+    </div>
+    <p class="hero-eyebrow anim-fade-up anim-delay-1">The Comforters House Global</p>
+    <h1 class="hero-title anim-fade-up anim-delay-2">Cell Attendance<br>Portal</h1>
+    <p class="hero-sub anim-fade-up anim-delay-3">Sign in to mark attendance for your cell members in today's service.</p>
+  </header>
+
+  <!-- § MAIN (login form) -->
+  <main id="login-main" aria-label="Sign in form">
+    <div class="login-card anim-fade-up anim-delay-4">
+      <h2>Welcome, Cell Leader</h2>
+      <p>Enter your credentials to continue</p>
+
+      <form id="login-form" novalidate>
+
+        <div class="field" id="field-cell">
+          <label for="input-cell">Your Cell Group</label>
+          <div class="select-wrap">
+            <select id="input-cell" name="cell" autocomplete="organization" required aria-required="true" aria-describedby="err-cell">
+              <option value="" disabled selected>Select your cell…</option>
+              <option value="powerhouse">Power House</option>
+              <option value="achievers">Achievers</option>
+              <option value="champions">Champions</option>
+              <option value="victorious">Victorious</option>
+              <option value="overcomers">Overcomers</option>
+              <option value="glory">Glory</option>
+              <option value="covenant">Covenant</option>
+              <option value="excel">Excel</option>
+              <option value="dominion">Dominion</option>
+              <option value="grace">Grace</option>
+              <option value="destiny">Destiny</option>
+              <option value="kingdom">Kingdom Builders</option>
+              <option value="sunrise">Sunrise</option>
+              <option value="harvest">Harvest</option>
+              <option value="eagles">Eagles</option>
+              <option value="nobles">Nobles</option>
+              <option value="zion">Zion</option>
+              <option value="lighthouse">Lighthouse</option>
+              <option value="manifold">Manifold Blessings</option>
+              <option value="conquerors">Conquerors</option>
+            </select>
+          </div>
+          <span class="field-error" id="err-cell" role="alert">Please select your cell group</span>
+        </div>
+
+        <div class="field" id="field-username">
+          <label for="input-username">Phone / Email</label>
+          <input
+            type="text"
+            id="input-username"
+            name="username"
+            placeholder="e.g. 0801 234 5678"
+            autocomplete="username"
+            required
+            aria-required="true"
+            aria-describedby="err-username"
+            inputmode="text"
+          />
+          <span class="field-error" id="err-username" role="alert">Please enter your phone number or email</span>
+        </div>
+
+        <div class="field" id="field-password">
+          <label for="input-password">Password</label>
+          <div class="pwd-wrap">
+            <input
+              type="password"
+              id="input-password"
+              name="password"
+              placeholder="Enter password"
+              autocomplete="current-password"
+              required
+              aria-required="true"
+              aria-describedby="err-password"
+            />
+            <button type="button" class="pwd-toggle" aria-label="Show password" id="btn-pwd-toggle">👁</button>
+          </div>
+          <span class="field-error" id="err-password" role="alert">Password is required</span>
+        </div>
+
+        <button type="submit" id="btn-primary" aria-live="polite">Sign In</button>
+
+        <p class="login-hint">Forgot password? <a href="#" onclick="showToast('Contact your zone coordinator'); return false;">Contact coordinator</a></p>
+      </form>
+    </div>
+  </main>
+
+  <!-- § LOGIN FOOTER -->
+  <footer id="login-footer" aria-label="Site footer">
+    <p>
+      © 2026 The Comforters House Global<br>
+      <a href="#">Privacy Policy</a> · <a href="#">Help</a>
+    </p>
+  </footer>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN B — ATTENDANCE
+══════════════════════════════════════════ -->
+<section id="screen-attendance" class="screen" role="main" aria-label="Attendance marking">
+
+  <!-- Top navigation bar -->
+  <nav class="topbar" aria-label="App navigation">
+    <div class="topbar-left">
+      <div class="topbar-logo" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8.5" y="1" width="3" height="18" rx="1.5" fill="#C49A28"/>
+          <rect x="1" y="8.5" width="18" height="3" rx="1.5" fill="#C49A28"/>
+        </svg>
+      </div>
+      <div class="topbar-text">
+        <div class="topbar-name" id="topbar-leader-name">Loading…</div>
+        <div class="topbar-cell" id="topbar-cell-name">—</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-logout" id="btn-logout" aria-label="Log out">Log out</button>
+    </div>
+  </nav>
+
+  <!-- § MAIN (attendance content) -->
+  <main id="attendance-main" aria-label="Member attendance list">
+
+    <!-- Service context -->
+    <div class="service-bar" role="region" aria-label="Current service">
+      <div class="service-info">
+        <div class="service-type" id="service-type">Sunday Service</div>
+        <div class="service-date" id="service-date">Loading date…</div>
+      </div>
+      <span class="service-badge" aria-label="Service session">1st Service</span>
+    </div>
+
+    <!-- § INSIGHTS PANEL -->
+    <section id="insights-panel" aria-label="Attendance summary">
+      <div class="insight-card" role="status" aria-live="polite">
+        <div class="insight-val" id="count-total">—</div>
+        <div class="insight-lbl">Total</div>
+      </div>
+      <div class="insight-card" role="status" aria-live="polite">
+        <div class="insight-val green" id="count-present">0</div>
+        <div class="insight-lbl">Present</div>
+      </div>
+      <div class="insight-card" role="status" aria-live="polite">
+        <div class="insight-val wine" id="count-absent">0</div>
+        <div class="insight-lbl">Absent</div>
+      </div>
+    </section>
+
+    <!-- Search -->
+    <div class="search-wrap" role="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="search" id="input-search" placeholder="Search members…" autocomplete="off" aria-label="Search members" />
+      <button class="search-clear" id="btn-search-clear" aria-label="Clear search">✕</button>
+    </div>
+
+    <!-- List header -->
+    <div class="list-header">
+      <span class="list-title" id="list-count-label">All members</span>
+      <button class="mark-all-btn" id="btn-mark-all" aria-label="Mark all present">Mark all present</button>
+    </div>
+
+    <!-- § LIST ROOT — member cards injected here by JS -->
+    <ul id="list-root" aria-label="Cell members" aria-live="polite">
+      <!-- rendered by app.js -->
+    </ul>
+
+    <!-- Empty search state -->
+    <div class="empty-state" id="empty-state" role="status" aria-live="polite">
+      <div class="empty-icon" aria-hidden="true">🔍</div>
+      <div class="empty-title">No members found</div>
+      <div class="empty-text">Try a different name or clear the search.</div>
+    </div>
+
+    <div class="divider" aria-hidden="true"></div>
+
+  </main>
+
+  <!-- Bottom submit bar -->
+  <div class="submit-bar" role="region" aria-label="Submission controls">
+    <div class="submit-progress">
+      <div class="progress-label" id="progress-label">0 of 0 marked</div>
+      <div class="progress-bar-bg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar-aria">
+        <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <button id="btn-submit" disabled>Submit →</button>
+  </div>
+
+  <!-- § ATTENDANCE FOOTER -->
+  <footer id="att-footer" aria-label="App footer">
+    <p>TCH Global Attendance System · <a href="#" onclick="showToast('Help coming soon'); return false;">Help</a></p>
+  </footer>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN C — SUCCESS
+══════════════════════════════════════════ -->
+<section id="screen-success" class="screen" role="main" aria-label="Submission successful">
+  <div class="success-icon-wrap" aria-hidden="true">✅</div>
+  <h2 class="success-title">Attendance Saved!</h2>
+  <p class="success-text">Your cell attendance has been recorded successfully. God bless you for your faithfulness.</p>
+  <div class="success-summary" role="region" aria-label="Submission summary">
+    <div class="sum-item">
+      <div class="sum-val g" id="sum-present">—</div>
+      <div class="sum-lbl">Present</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val r" id="sum-absent">—</div>
+      <div class="sum-lbl">Absent</div>
+    </div>
+  </div>
+  <button class="btn-new-session" id="btn-new-session">Mark Another Service</button>
+</section>
+
+
+<!-- Toast notification -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+
+<!-- ══════════════════════════════════════════
+     EMBEDDED DEMO DATA (would come from backend)
+══════════════════════════════════════════ -->
+<script>
+/**
+ * DEMO DATA — replace with real API calls in app.js
+ * 20 cell groups; each stores leader info + member list.
+ */
+window.DEMO_CELLS = {
+  powerhouse: {
+    cellName: "Power House",
+    leader: "Bro. Ifeanyi Okafor",
+    members: [
+      { id: "ph01", name: "Adaeze Nwosu",   phone: "0803-112-0001", role: "Assistant Leader" },
+      { id: "ph02", name: "Emeka Duru",     phone: "0812-220-0002", role: "Member" },
+      { id: "ph03", name: "Chidinma Eze",   phone: "0701-330-0003", role: "Secretary" },
+      { id: "ph04", name: "Tobenna Ikenna", phone: "0815-440-0004", role: "Member" },
+      { id: "ph05", name: "Ngozi Obi",      phone: "0902-550-0005", role: "Member" },
+      { id: "ph06", name: "Uche Mba",       phone: "0806-660-0006", role: "Member" },
+      { id: "ph07", name: "Amara Odoh",     phone: "0703-770-0007", role: "Member" },
+      { id: "ph08", name: "Chukwuma Ali",   phone: "0817-880-0008", role: "Member" },
+      { id: "ph09", name: "Ifeoma Onah",    phone: "0911-990-0009", role: "Member" },
+      { id: "ph10", name: "Ebuka Agu",      phone: "0816-001-0010", role: "Member" },
+    ]
+  },
+  achievers: {
+    cellName: "Achievers",
+    leader: "Sis. Blessing Taiwo",
+    members: [
+      { id: "ac01", name: "Kehinde Salami",  phone: "0803-111-1001", role: "Assistant Leader" },
+      { id: "ac02", name: "Oluwaseun Bello", phone: "0814-222-1002", role: "Member" },
+      { id: "ac03", name: "Funmilayo Ojo",   phone: "0705-333-1003", role: "Secretary" },
+      { id: "ac04", name: "Adewale Adeyemi", phone: "0816-444-1004", role: "Member" },
+      { id: "ac05", name: "Motunrayo Akin",  phone: "0907-555-1005", role: "Member" },
+      { id: "ac06", name: "Babatunde Cole",  phone: "0818-666-1006", role: "Member" },
+      { id: "ac07", name: "Taiwo Adeola",    phone: "0709-777-1007", role: "Member" },
+      { id: "ac08", name: "Yetunde Raji",    phone: "0810-888-1008", role: "Member" },
+    ]
+  },
+  champions: {
+    cellName: "Champions",
+    leader: "Deacon Samuel Nwachukwu",
+    members: [
+      { id: "ch01", name: "Paulinus Chidi",   phone: "0801-111-2001", role: "Assistant Leader" },
+      { id: "ch02", name: "Augustina Okeke",  phone: "0812-222-2002", role: "Secretary" },
+      { id: "ch03", name: "Celestine Ogbu",   phone: "0703-333-2003", role: "Member" },
+      { id: "ch04", name: "Obiageli Nnadi",   phone: "0819-444-2004", role: "Member" },
+      { id: "ch05", name: "Ikechukwu Orji",   phone: "0905-555-2005", role: "Member" },
+      { id: "ch06", name: "Nkechi Okonkwo",   phone: "0806-666-2006", role: "Member" },
+      { id: "ch07", name: "Emenike Ezeh",     phone: "0817-777-2007", role: "Member" },
+    ]
+  },
+  victorious: {
+    cellName: "Victorious",
+    leader: "Sis. Rukayat Musa",
+    members: [
+      { id: "vi01", name: "Aminat Suleiman",  phone: "0803-111-3001", role: "Assistant Leader" },
+      { id: "vi02", name: "Raheemat Lawal",   phone: "0814-222-3002", role: "Member" },
+      { id: "vi03", name: "Fatima Abdulkadir",phone: "0705-333-3003", role: "Secretary" },
+      { id: "vi04", name: "Hauwa Ibrahim",    phone: "0816-444-3004", role: "Member" },
+      { id: "vi05", name: "Zainab Bello",     phone: "0807-555-3005", role: "Member" },
+      { id: "vi06", name: "Khadijat Umar",    phone: "0918-666-3006", role: "Member" },
+    ]
+  },
+  overcomers: {
+    cellName: "Overcomers",
+    leader: "Bro. Victor Oghenerhoro",
+    members: [
+      { id: "ov01", name: "Erere Akpotor",    phone: "0806-111-4001", role: "Assistant Leader" },
+      { id: "ov02", name: "Eloho Efemwonyi",  phone: "0817-222-4002", role: "Member" },
+      { id: "ov03", name: "Oghenekaro Denis", phone: "0708-333-4003", role: "Secretary" },
+      { id: "ov04", name: "Irene Ighama",     phone: "0819-444-4004", role: "Member" },
+      { id: "ov05", name: "Blessing Akpevwe", phone: "0910-555-4005", role: "Member" },
+      { id: "ov06", name: "Mukoro Oghenerukewe",phone:"0801-666-4006",role: "Member" },
+      { id: "ov07", name: "Ufuoma Orugbo",    phone: "0812-777-4007", role: "Member" },
+      { id: "ov08", name: "Eneruvie Okoh",    phone: "0703-888-4008", role: "Member" },
+    ]
+  },
+  glory: {
+    cellName: "Glory",
+    leader: "Sis. Grace Adaora",
+    members: [
+      { id: "gl01", name: "Chinyere Nwofor",  phone: "0803-111-5001", role: "Assistant Leader" },
+      { id: "gl02", name: "Obioma Chibueze",  phone: "0814-222-5002", role: "Member" },
+      { id: "gl03", name: "Chiamaka Odum",    phone: "0705-333-5003", role: "Secretary" },
+      { id: "gl04", name: "Ogochukwu Ike",    phone: "0916-444-5004", role: "Member" },
+      { id: "gl05", name: "Adaeze Ihedioha",  phone: "0807-555-5005", role: "Member" },
+    ]
+  },
+  covenant: {
+    cellName: "Covenant",
+    leader: "Bro. Daniel Olawale",
+    members: [
+      { id: "cv01", name: "Tope Adewumi",     phone: "0803-111-6001", role: "Assistant Leader" },
+      { id: "cv02", name: "Segun Awoniyi",    phone: "0814-222-6002", role: "Member" },
+      { id: "cv03", name: "Kemi Adesanya",    phone: "0705-333-6003", role: "Secretary" },
+      { id: "cv04", name: "Gbola Falaye",     phone: "0816-444-6004", role: "Member" },
+      { id: "cv05", name: "Tobi Osundare",    phone: "0907-555-6005", role: "Member" },
+      { id: "cv06", name: "Bayo Akinwande",   phone: "0808-666-6006", role: "Member" },
+      { id: "cv07", name: "Lara Oduya",       phone: "0819-777-6007", role: "Member" },
+      { id: "cv08", name: "Niyi Omotunde",    phone: "0910-888-6008", role: "Member" },
+      { id: "cv09", name: "Funke Oladipo",    phone: "0801-999-6009", role: "Member" },
+    ]
+  },
+  excel: {
+    cellName: "Excel",
+    leader: "Sis. Joy Akintunde",
+    members: [
+      { id: "ex01", name: "Temitope Akin",    phone: "0803-111-7001", role: "Assistant Leader" },
+      { id: "ex02", name: "Modupe Agboola",   phone: "0814-222-7002", role: "Member" },
+      { id: "ex03", name: "Ronke Ibironke",   phone: "0705-333-7003", role: "Secretary" },
+      { id: "ex04", name: "Bukola Fasanya",   phone: "0816-444-7004", role: "Member" },
+      { id: "ex05", name: "Damilola Adeoye",  phone: "0907-555-7005", role: "Member" },
+      { id: "ex06", name: "Abayomi Ijala",    phone: "0808-666-7006", role: "Member" },
+    ]
+  },
+  dominion: {
+    cellName: "Dominion",
+    leader: "Bro. Emeka Okoye",
+    members: [
+      { id: "dm01", name: "Chukwuemeka Udo",  phone: "0803-111-8001", role: "Assistant Leader" },
+      { id: "dm02", name: "Nnamdi Okezie",    phone: "0814-222-8002", role: "Member" },
+      { id: "dm03", name: "Chioma Achebe",    phone: "0705-333-8003", role: "Secretary" },
+      { id: "dm04", name: "Obinna Ozoemena",  phone: "0816-444-8004", role: "Member" },
+      { id: "dm05", name: "Nneka Asadu",      phone: "0907-555-8005", role: "Member" },
+      { id: "dm06", name: "Ifenna Madu",      phone: "0808-666-8006", role: "Member" },
+      { id: "dm07", name: "Chibuike Ofor",    phone: "0819-777-8007", role: "Member" },
+    ]
+  },
+  grace: {
+    cellName: "Grace",
+    leader: "Sis. Rebecca Alabi",
+    members: [
+      { id: "gr01", name: "Morenike Abiodun", phone: "0803-111-9001", role: "Assistant Leader" },
+      { id: "gr02", name: "Remi Oyedeji",     phone: "0814-222-9002", role: "Member" },
+      { id: "gr03", name: "Sola Agbaje",      phone: "0705-333-9003", role: "Secretary" },
+      { id: "gr04", name: "Tutu Badmus",      phone: "0816-444-9004", role: "Member" },
+      { id: "gr05", name: "Yewande Oshodi",   phone: "0907-555-9005", role: "Member" },
+    ]
+  },
+  destiny: {
+    cellName: "Destiny",
+    leader: "Bro. Uchenna Dike",
+    members: [
+      { id: "de01", name: "Kingsley Obasi",   phone: "0803-111-0011", role: "Assistant Leader" },
+      { id: "de02", name: "Precious Awa",     phone: "0814-222-0012", role: "Member" },
+      { id: "de03", name: "Chizaram Okwu",    phone: "0705-333-0013", role: "Secretary" },
+      { id: "de04", name: "Somtochukwu Oti",  phone: "0916-444-0014", role: "Member" },
+      { id: "de05", name: "Adanna Igbo",      phone: "0807-555-0015", role: "Member" },
+      { id: "de06", name: "Ejike Chukwu",     phone: "0818-666-0016", role: "Member" },
+    ]
+  },
+  kingdom: {
+    cellName: "Kingdom Builders",
+    leader: "Deacon Paul Eze",
+    members: [
+      { id: "kb01", name: "Miriam Abubakar",  phone: "0803-111-0021", role: "Assistant Leader" },
+      { id: "kb02", name: "Joshua Garba",     phone: "0814-222-0022", role: "Member" },
+      { id: "kb03", name: "Esther Yakubu",    phone: "0705-333-0023", role: "Secretary" },
+      { id: "kb04", name: "Daniel Sani",      phone: "0816-444-0024", role: "Member" },
+      { id: "kb05", name: "Rahab Musa",       phone: "0907-555-0025", role: "Member" },
+      { id: "kb06", name: "Caleb Luka",       phone: "0808-666-0026", role: "Member" },
+      { id: "kb07", name: "Deborah Hassan",   phone: "0819-777-0027", role: "Member" },
+      { id: "kb08", name: "Solomon Bwala",    phone: "0910-888-0028", role: "Member" },
+    ]
+  },
+  sunrise: {
+    cellName: "Sunrise",
+    leader: "Sis. Anthonia Obi",
+    members: [
+      { id: "sr01", name: "Ogechukwu Nweze",  phone: "0803-111-0031", role: "Assistant Leader" },
+      { id: "sr02", name: "Amarachi Onwuka",  phone: "0814-222-0032", role: "Member" },
+      { id: "sr03", name: "Cynthia Onyeke",   phone: "0705-333-0033", role: "Secretary" },
+      { id: "sr04", name: "Ijeoma Ezenwachi",  phone:"0816-444-0034", role: "Member" },
+    ]
+  },
+  harvest: {
+    cellName: "Harvest",
+    leader: "Bro. Gabriel Adeleke",
+    members: [
+      { id: "hv01", name: "Olawumi Adeleke",  phone: "0803-111-0041", role: "Assistant Leader" },
+      { id: "hv02", name: "Omotayo Ogunmola", phone: "0814-222-0042", role: "Member" },
+      { id: "hv03", name: "Wale Olatunji",    phone: "0705-333-0043", role: "Secretary" },
+      { id: "hv04", name: "Sunbo Arowolo",    phone: "0816-444-0044", role: "Member" },
+      { id: "hv05", name: "Bisi Ayinde",      phone: "0907-555-0045", role: "Member" },
+      { id: "hv06", name: "Kayode Owoeye",    phone: "0808-666-0046", role: "Member" },
+    ]
+  },
+  eagles: {
+    cellName: "Eagles",
+    leader: "Sis. Patience Udoh",
+    members: [
+      { id: "eg01", name: "Ofonime Inyang",   phone: "0803-111-0051", role: "Assistant Leader" },
+      { id: "eg02", name: "Aniekan Bassey",   phone: "0814-222-0052", role: "Member" },
+      { id: "eg03", name: "Nsidibe Akpan",    phone: "0705-333-0053", role: "Secretary" },
+      { id: "eg04", name: "Ifiok Etukudo",    phone: "0816-444-0054", role: "Member" },
+      { id: "eg05", name: "Uduak John",       phone: "0907-555-0055", role: "Member" },
+    ]
+  },
+  nobles: {
+    cellName: "Nobles",
+    leader: "Bro. Olumide Adegoke",
+    members: [
+      { id: "nb01", name: "Adeola Adegbite",  phone: "0803-111-0061", role: "Assistant Leader" },
+      { id: "nb02", name: "Folake Oladipo",   phone: "0814-222-0062", role: "Member" },
+      { id: "nb03", name: "Dotun Owoyemi",    phone: "0705-333-0063", role: "Secretary" },
+      { id: "nb04", name: "Kunle Ajayi",      phone: "0816-444-0064", role: "Member" },
+      { id: "nb05", name: "Shade Omotosho",   phone: "0907-555-0065", role: "Member" },
+      { id: "nb06", name: "Tunji Aregbesola", phone: "0808-666-0066", role: "Member" },
+      { id: "nb07", name: "Bolanle Ojo",      phone: "0819-777-0067", role: "Member" },
+    ]
+  },
+  zion: {
+    cellName: "Zion",
+    leader: "Sis. Naomi Dangana",
+    members: [
+      { id: "zn01", name: "Comfort Agada",    phone: "0803-111-0071", role: "Assistant Leader" },
+      { id: "zn02", name: "Samuel Idoko",     phone: "0814-222-0072", role: "Member" },
+      { id: "zn03", name: "Rejoice Ojile",    phone: "0705-333-0073", role: "Secretary" },
+      { id: "zn04", name: "Sunday Ogah",      phone: "0816-444-0074", role: "Member" },
+      { id: "zn05", name: "Blessing Ameh",    phone: "0907-555-0075", role: "Member" },
+    ]
+  },
+  lighthouse: {
+    cellName: "Lighthouse",
+    leader: "Bro. Festus Obi",
+    members: [
+      { id: "lh01", name: "Kosisochukwu Nze", phone: "0803-111-0081", role: "Assistant Leader" },
+      { id: "lh02", name: "Chukwudi Orji",    phone: "0814-222-0082", role: "Member" },
+      { id: "lh03", name: "Nwamaka Iroha",    phone: "0705-333-0083", role: "Secretary" },
+      { id: "lh04", name: "Okechukwu Onu",    phone: "0816-444-0084", role: "Member" },
+      { id: "lh05", name: "Adaora Enyinna",   phone: "0907-555-0085", role: "Member" },
+      { id: "lh06", name: "Ugochi Nwabara",   phone: "0808-666-0086", role: "Member" },
+    ]
+  },
+  manifold: {
+    cellName: "Manifold Blessings",
+    leader: "Sis. Christy Oyelaran",
+    members: [
+      { id: "mb01", name: "Adetola Adekunle",  phone: "0803-111-0091", role: "Assistant Leader" },
+      { id: "mb02", name: "Oluwakemi Salawu",  phone: "0814-222-0092", role: "Member" },
+      { id: "mb03", name: "Adepeju Adedoyin",  phone: "0705-333-0093", role: "Secretary" },
+      { id: "mb04", name: "Ifeoluwa Adewoye",  phone: "0816-444-0094", role: "Member" },
+      { id: "mb05", name: "Olayinka Omodele",  phone: "0907-555-0095", role: "Member" },
+      { id: "mb06", name: "Oluseun Akintunde", phone: "0808-666-0096", role: "Member" },
+      { id: "mb07", name: "Tokunbo Arowolo",   phone: "0819-777-0097", role: "Member" },
+      { id: "mb08", name: "Adedayo Olatunji",  phone: "0810-888-0098", role: "Member" },
+    ]
+  },
+  conquerors: {
+    cellName: "Conquerors",
+    leader: "Bro. John Aliyu",
+    members: [
+      { id: "cq01", name: "Yusuf Aliyu",       phone: "0803-111-0101", role: "Assistant Leader" },
+      { id: "cq02", name: "Maryam Bello",      phone: "0814-222-0102", role: "Member" },
+      { id: "cq03", name: "Ibrahim Sule",       phone: "0705-333-0103", role: "Secretary" },
+      { id: "cq04", name: "Hadiza Tanko",       phone: "0816-444-0104", role: "Member" },
+      { id: "cq05", name: "Umar Abdullahi",     phone: "0907-555-0105", role: "Member" },
+      { id: "cq06", name: "Aisha Mohammed",     phone: "0808-666-0106", role: "Member" },
+    ]
+  }
+};
+</script>
+
+<!-- ══════════════════════════════════════════
+     LINK APP.JS
+══════════════════════════════════════════ -->
+<script src="app.js"></script>
+
+<!-- INLINE FALLBACK APP LOGIC
+     (Remove this block when app.js is present — this is so the demo
+      works standalone without a separate file) -->
+<script>
+(function () {
+  /* ── helpers ─────────────────────────────── */
+  const $  = id => document.getElementById(id);
+  const toInitials = name => name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  const COLORS = ['#5C1A2E','#1A6B45','#1A3A5C','#7A4A00','#4A1A5C','#005C4A','#5C3A00','#00365C'];
+  const colorFor = id => COLORS[parseInt(id.replace(/\D/g,''), 10) % COLORS.length];
+  let toastTimer;
+
+  window.showToast = function(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  };
+
+  /* ── state ───────────────────────────────── */
+  let state = { cellKey: null, attendance: {}, members: [] };
+
+  /* ── screen switcher ─────────────────────── */
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  /* ── date label ──────────────────────────── */
+  function todayLabel() {
+    return new Date().toLocaleDateString('en-NG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }
+
+  /* ── render member list ──────────────────── */
+  function renderList(query) {
+    const list = $('list-root');
+    const empty = $('empty-state');
+    const q = (query || '').toLowerCase().trim();
+    let visible = 0;
+
+    list.innerHTML = '';
+    state.members.forEach((m, i) => {
+      if (q && !m.name.toLowerCase().includes(q)) return;
+      visible++;
+      const att = state.attendance[m.id] || 'pending';
+      const li = document.createElement('li');
+      li.className = 'member-card anim-fade-up' + (att === 'present' ? ' present' : att === 'absent' ? ' absent' : '');
+      li.style.animationDelay = (i * 0.035) + 's';
+      li.setAttribute('role', 'button');
+      li.setAttribute('tabindex', '0');
+      li.setAttribute('aria-label', `${m.name} — ${att}. Tap to toggle`);
+      li.dataset.id = m.id;
+
+      const icon = att === 'present' ? '✓' : att === 'absent' ? '✗' : '○';
+      const chip = att === 'present'
+        ? '<span class="status-chip chip-present">Present</span>'
+        : att === 'absent'
+        ? '<span class="status-chip chip-absent">Absent</span>'
+        : '<span class="status-chip chip-pending">Pending</span>';
+
+      li.innerHTML = `
+        <div class="member-avatar" style="background:${colorFor(m.id)}" aria-hidden="true">${toInitials(m.name)}</div>
+        <div class="member-info">
+          <div class="member-name">${m.name}</div>
+          <div class="member-meta">${m.role} · ${m.phone}</div>
+          <div class="member-status">${chip}</div>
+        </div>
+        <button class="member-toggle" aria-label="Toggle attendance for ${m.name}">${icon}</button>`;
+
+      li.addEventListener('click', () => toggleMember(m.id));
+      li.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleMember(m.id); }});
+      list.appendChild(li);
+    });
+
+    empty.classList.toggle('show', visible === 0);
+    $('list-count-label').textContent = q ? `${visible} result${visible !== 1 ? 's' : ''}` : `All members (${state.members.length})`;
+  }
+
+  function toggleMember(id) {
+    const cur = state.attendance[id] || 'pending';
+    state.attendance[id] = cur === 'pending' ? 'present' : cur === 'present' ? 'absent' : 'present';
+    updateInsights();
+    renderList($('input-search').value);
+  }
+
+  /* ── insights + progress ─────────────────── */
+  function updateInsights() {
+    const total   = state.members.length;
+    const present = Object.values(state.attendance).filter(v => v === 'present').length;
+    const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
+    const marked  = present + absent;
+    const pct     = total ? Math.round((marked / total) * 100) : 0;
+
+    $('count-total').textContent   = total;
+    $('count-present').textContent = present;
+    $('count-absent').textContent  = absent;
+    $('progress-label').textContent = `${marked} of ${total} marked`;
+    $('progress-bar').style.width  = pct + '%';
+    $('progress-bar-aria').setAttribute('aria-valuenow', pct);
+    $('btn-submit').disabled = marked < total;
+  }
+
+  /* ── login ───────────────────────────────── */
+  $('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let ok = true;
+
+    const cellKey  = $('input-cell').value;
+    const username = $('input-username').value.trim();
+    const password = $('input-password').value;
+
+    const setErr = (fid, show) => {
+      const f = $(fid);
+      f.classList.toggle('has-error', show);
+      if (show) ok = false;
+    };
+    setErr('field-cell',     !cellKey);
+    setErr('field-username', !username);
+    setErr('field-password', !password);
+    if (!ok) return;
+
+    const btn = $('btn-primary');
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.textContent = ' Signing in…';
+
+    // Simulate auth (replace with real API call)
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.textContent = 'Sign In';
+
+      const cell = window.DEMO_CELLS[cellKey];
+      if (!cell) { showToast('Cell not found. Contact admin.'); return; }
+
+      state.cellKey    = cellKey;
+      state.members    = cell.members;
+      state.attendance = {};
+
+      $('topbar-leader-name').textContent = cell.leader;
+      $('topbar-cell-name').textContent   = cell.cellName + ' Cell';
+      $('service-date').textContent       = todayLabel();
+      $('count-total').textContent        = cell.members.length;
+
+      updateInsights();
+      renderList();
+      showScreen('screen-attendance');
+      showToast(`Welcome, ${cell.leader.split(' ')[1] || cell.leader}!`);
+    }, 900);
+  });
+
+  /* ── password toggle ─────────────────────── */
+  $('btn-pwd-toggle').addEventListener('click', function() {
+    const inp = $('input-password');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    this.textContent = show ? '🙈' : '👁';
+  });
+
+  /* ── search ──────────────────────────────── */
+  $('input-search').addEventListener('input', function() {
+    $('btn-search-clear').style.display = this.value ? 'block' : 'none';
+    renderList(this.value);
+  });
+  $('btn-search-clear').addEventListener('click', function() {
+    $('input-search').value = '';
+    this.style.display = 'none';
+    renderList();
+  });
+
+  /* ── mark all ────────────────────────────── */
+  $('btn-mark-all').addEventListener('click', function() {
+    const allPresent = state.members.every(m => state.attendance[m.id] === 'present');
+    state.members.forEach(m => {
+      state.attendance[m.id] = allPresent ? 'pending' : 'present';
+    });
+    updateInsights();
+    renderList($('input-search').value);
+    showToast(allPresent ? 'All cleared' : 'All marked present');
+  });
+
+  /* ── submit ──────────────────────────────── */
+  $('btn-submit').addEventListener('click', function() {
+    this.disabled = true;
+    this.textContent = 'Saving…';
+    const present = Object.values(state.attendance).filter(v => v === 'present').length;
+    const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
+
+    // Simulate API submission
+    setTimeout(() => {
+      $('sum-present').textContent = present;
+      $('sum-absent').textContent  = absent;
+      showScreen('screen-success');
+    }, 700);
+  });
+
+  /* ── logout ──────────────────────────────── */
+  $('btn-logout').addEventListener('click', function() {
+    if (!confirm('Log out and return to sign-in?')) return;
+    state = { cellKey: null, attendance: {}, members: [] };
+    $('login-form').reset();
+    $('btn-submit').disabled = false;
+    $('btn-submit').textContent = 'Submit →';
+    $('input-search').value = '';
+    showScreen('screen-login');
+  });
+
+  /* ── new session ─────────────────────────── */
+  $('btn-new-session').addEventListener('click', function() {
+    state.attendance = {};
+    updateInsights();
+    renderList();
+    $('btn-submit').disabled = true;
+    $('btn-submit').textContent = 'Submit →';
+    showScreen('screen-attendance');
+  });
+
+})();
+</script>
+
+</body>
+</html>
