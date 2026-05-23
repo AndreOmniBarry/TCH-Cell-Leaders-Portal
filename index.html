@@ -1374,7 +1374,7 @@ window.DEMO_CELLS = {
   }
 
   /* ── login ───────────────────────────────── */
-  $('login-form').addEventListener('submit', function(e) {
+  $('login-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     let ok = true;
 
@@ -1384,7 +1384,7 @@ window.DEMO_CELLS = {
 
     const setErr = (fid, show) => {
       const f = $(fid);
-      f.classList.toggle('has-error', show);
+      if (f) f.classList.toggle('has-error', show);
       if (show) ok = false;
     };
     setErr('field-cell',     !cellKey);
@@ -1397,31 +1397,51 @@ window.DEMO_CELLS = {
     btn.classList.add('loading');
     btn.textContent = ' Signing in…';
 
-    // Simulate auth (replace with real API call)
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.textContent = 'Sign In';
+    try {
+      const response = await fetch('https://tch-cell-leaders-portal.onrender.com/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cellKey, username, password })
+      });
 
-      const cell = window.DEMO_CELLS[cellKey];
-      if (!cell) { showToast('Cell not found. Contact admin.'); return; }
+      const data = await response.json();
 
+      if (!data.success) {
+        showToast(data.message || 'Login failed. Please check your details.');
+        return;
+      }
+
+      // Save token for future requests
+      localStorage.setItem('authToken', data.token);
+
+      // Initialize state
       state.cellKey    = cellKey;
-      state.members    = cell.members;
+      state.cellName   = data.cell.cellName;
+      state.leader     = data.cell.leader;
+      state.members    = data.cell.members;
       state.attendance = {};
 
-      $('topbar-leader-name').textContent = cell.leader;
-      $('topbar-cell-name').textContent   = cell.cellName + ' Cell';
+      // Update UI
+      $('topbar-leader-name').textContent = data.cell.leader;
+      $('topbar-cell-name').textContent   = data.cell.cellName + ' Cell';
       $('service-date').textContent       = todayLabel();
-      $('count-total').textContent        = cell.members.length;
 
       updateInsights();
       renderList();
       showScreen('screen-attendance');
-      showToast(`Welcome, ${cell.leader.split(' ')[1] || cell.leader}!`);
-    }, 900);
-  });
 
+      const firstName = data.cell.leader.split(' ')[1] || data.cell.leader;
+      showToast(`Welcome, ${firstName}! 🙏`);
+
+    } catch (err) {
+      console.error(err);
+      showToast('Network error. Please check your connection and try again.');
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.textContent = 'Sign In';
+    }
+  });
   /* ── password toggle ─────────────────────── */
   $('btn-pwd-toggle').addEventListener('click', function() {
     const inp = $('input-password');
@@ -1454,18 +1474,54 @@ window.DEMO_CELLS = {
   });
 
   /* ── submit ──────────────────────────────── */
-  $('btn-submit').addEventListener('click', function() {
+  $('btn-submit').addEventListener('click', async function() {
     this.disabled = true;
     this.textContent = 'Saving…';
+
     const present = Object.values(state.attendance).filter(v => v === 'present').length;
     const absent  = Object.values(state.attendance).filter(v => v === 'absent').length;
 
-    // Simulate API submission
-    setTimeout(() => {
+    const record = {
+      cellKey     : state.cellKey,
+      cellName    : state.cellName,
+      leader      : state.leader,
+      serviceDate : new Date().toISOString().slice(0, 10),
+      members     : state.members.map(m => ({
+        ...m,
+        status: state.attendance[m.id] || 'absent'
+      })),
+    };
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('https://tch-cell-leaders-portal.onrender.com/api/attendance/submit', {
+        method : 'POST',
+        headers: {
+          'Content-Type' : 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(record),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        showToast(data.message || 'Submission failed. Please try again.');
+        this.disabled = false;
+        this.textContent = 'Submit →';
+        return;
+      }
+
       $('sum-present').textContent = present;
       $('sum-absent').textContent  = absent;
       showScreen('screen-success');
-    }, 700);
+
+    } catch (err) {
+      console.error(err);
+      showToast('Network error. Could not submit attendance.');
+      this.disabled = false;
+      this.textContent = 'Submit →';
+    }
   });
 
   /* ── logout ──────────────────────────────── */
