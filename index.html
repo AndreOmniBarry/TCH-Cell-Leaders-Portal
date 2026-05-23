@@ -230,16 +230,18 @@
     .pwd-wrap { position: relative; }
     .pwd-wrap input { padding-right: 44px; }
     .pwd-toggle {
-      position: absolute;
-      right: 12px; top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      padding: 4px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1;
-    }
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
     .pwd-toggle:focus-visible { outline: 2px solid var(--gold); border-radius: 4px; }
 
     /* ERROR */
@@ -1439,14 +1441,14 @@ window.DEMO_CELLS = {
             }
           });
         
-          /* ── PASSWORD TOGGLE ─────────────────────── */
+          /* ── PASSWORD TOGGLE ─────────────────────── 
           $('btn-pwd-toggle').addEventListener('click', function () {
             const inp  = $('input-password');
             const show = inp.type === 'password';
             inp.type   = show ? 'text' : 'password';
             this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
             this.textContent = show ? '🙈' : '👁';
-          });
+          }); /*
         
           /* ── SEARCH ──────────────────────────────── */
           $('input-search').addEventListener('input', function () {
