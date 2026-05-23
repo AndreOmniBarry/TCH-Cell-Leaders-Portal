@@ -13,15 +13,10 @@ const PORT = process.env.PORT || 3000;
 // ── CORS ─────────────────────────────────────────────────
 // Add your GitHub Pages URL here before deploying
 app.use(cors({
-  origin: [
-    'http://127.0.0.1:5500',
-    'http://localhost:5500',
-    'http://127.0.0.1:3000',
-    'http://localhost:3000',
-    'https://YOURUSERNAME.github.io',   // ← update this before deploy
-  ],
-  methods : ['GET', 'POST', 'OPTIONS'],
+  origin: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
 
 app.use(express.json());
