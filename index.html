@@ -1274,7 +1274,6 @@ window.DEMO_CELLS = {
       works standalone without a separate file) -->
       <script>
         (function () {
-          /* ── helpers ─────────────────────────────── */
           const $  = id => document.getElementById(id);
           const toInitials = name => name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
           const COLORS = ['#5C1A2E','#1A6B45','#1A3A5C','#7A4A00','#4A1A5C','#005C4A','#5C3A00','#00365C'];
@@ -1289,22 +1288,18 @@ window.DEMO_CELLS = {
             toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
           };
         
-          /* ── state ───────────────────────────────── */
           let state = { cellKey: null, cellName: null, leader: null, attendance: {}, members: [] };
         
-          /* ── screen switcher ─────────────────────── */
           function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             $(id).classList.add('active');
             window.scrollTo(0, 0);
           }
         
-          /* ── date label ──────────────────────────── */
           function todayLabel() {
             return new Date().toLocaleDateString('en-NG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
           }
         
-          /* ── render member list ──────────────────── */
           function renderList(query) {
             const list  = $('list-root');
             const empty = $('empty-state');
@@ -1361,7 +1356,6 @@ window.DEMO_CELLS = {
             renderList($('input-search').value);
           }
         
-          /* ── insights + progress ─────────────────── */
           function updateInsights() {
             const total   = state.members.length;
             const present = Object.values(state.attendance).filter(v => v === 'present').length;
@@ -1416,17 +1410,14 @@ window.DEMO_CELLS = {
                 return;
               }
         
-              // Save token for future requests
               localStorage.setItem('authToken', data.token);
         
-              // Populate state
               state.cellKey    = cellKey;
               state.cellName   = data.cell.cellName;
               state.leader     = data.cell.leader;
               state.members    = data.cell.members;
               state.attendance = {};
         
-              // Update UI
               $('topbar-leader-name').textContent = data.cell.leader;
               $('topbar-cell-name').textContent   = data.cell.cellName + ' Cell';
               $('service-date').textContent       = todayLabel();
